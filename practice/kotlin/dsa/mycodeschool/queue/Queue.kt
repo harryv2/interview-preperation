@@ -1,4 +1,4 @@
-package dsa.leetcode_75.mycodeschool.queue
+package dsa.mycodeschool.queue
 
 interface Queue<T> {
     val size: Int

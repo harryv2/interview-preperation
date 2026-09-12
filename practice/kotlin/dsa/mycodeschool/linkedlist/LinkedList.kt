@@ -1,4 +1,4 @@
-package dsa.leetcode_75.mycodeschool.linkedlist
+package dsa.mycodeschool.linkedlist
 
 class LinkedList<T> {
 

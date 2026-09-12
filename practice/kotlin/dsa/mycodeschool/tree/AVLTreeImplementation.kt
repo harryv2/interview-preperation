@@ -1,4 +1,4 @@
-package dsa.leetcode_75.mycodeschool.tree
+package dsa.mycodeschool.tree
 
 class AVLTree {
 
@@ -87,13 +87,13 @@ class AVLTree {
         root = insertNode(root, value)
     }
 
-    private fun search(node: Node?, value: Int): Boolean {
+    private fun search(node: Node?, value: Int): Node? {
         if (node == null) {
-            return false
+            return null
         }
 
         if (node.value == value) {
-            return true
+            return node
         }
 
         if (value < node.value) {
@@ -104,7 +104,7 @@ class AVLTree {
     }
 
     fun searchNode(value: Int): Boolean {
-        return search(root, value)
+        return search(root, value) != null
     }
 
     operator fun contains(value: Int): Boolean = searchNode(value)

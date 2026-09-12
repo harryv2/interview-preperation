@@ -1,4 +1,4 @@
-package dsa.leetcode_75.mycodeschool.stack
+package dsa.mycodeschool.stack
 
 interface Stack<T> {
     val size: Int

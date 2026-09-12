@@ -1,6 +1,6 @@
-package dsa.leetcode_75.mycodeschool.queue
+package dsa.mycodeschool.queue
 
-import dsa.leetcode_75.mycodeschool.linkedlist.DoublyLinkedList
+import dsa.mycodeschool.linkedlist.DoublyLinkedList
 
 class QueueLinkedListImplementation<T>: Queue<T> {
 

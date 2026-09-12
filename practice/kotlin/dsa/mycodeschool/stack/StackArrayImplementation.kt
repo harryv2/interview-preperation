@@ -1,4 +1,4 @@
-package dsa.leetcode_75.mycodeschool.stack
+package dsa.mycodeschool.stack
 
 class StackArray<T>(initialCapacity: Int = 10) : Stack<T> {
 

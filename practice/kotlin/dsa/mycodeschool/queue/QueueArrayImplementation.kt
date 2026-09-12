@@ -1,4 +1,4 @@
-package dsa.leetcode_75.mycodeschool.queue
+package dsa.mycodeschool.queue
 
 class QueueArray<T>(initialCapacity: Int = 10) : Queue<T> {
 

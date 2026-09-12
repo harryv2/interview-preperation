@@ -1,6 +1,6 @@
-package dsa.leetcode_75.mycodeschool.stack
+package dsa.mycodeschool.stack
 
-import dsa.leetcode_75.mycodeschool.linkedlist.DoublyLinkedList
+import dsa.mycodeschool.linkedlist.DoublyLinkedList
 
 
 class StackLinkedList<T>() : Stack<T> {
