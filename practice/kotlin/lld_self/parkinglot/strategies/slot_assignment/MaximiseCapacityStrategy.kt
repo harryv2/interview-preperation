@@ -1,0 +1,28 @@
+package lld_self.parkinglot.strategies.slot_assignment
+
+import lld_self.parkinglot.entity.FitRules
+import lld_self.parkinglot.entity.Floor
+import lld_self.parkinglot.entity.Slot
+import lld_self.parkinglot.entity.Vehicle
+
+
+class MaximiseCapacityStrategy : SlotAssignmentStrategy {
+    override fun getFreeSlot(
+        floors: Array<Floor>,
+        vehicle: Vehicle
+    ): Slot? {
+        var preferredType = FitRules.spotsFor(vehicle.type)
+        var slot : Slot? = null;
+
+        for(type in preferredType) {
+            for (floor in floors) {
+                slot = floor.reserve(type, vehicle)
+                if (slot != null) {
+                    break
+                }
+            }
+        }
+
+        return slot
+    }
+}
