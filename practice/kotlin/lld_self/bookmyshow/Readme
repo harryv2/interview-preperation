@@ -1,0 +1,24 @@
+
+Book My Show LLD
+
+ - user can browse current movies
+ - for each movie user can see user city theatres show times
+ - user can select a show and see free seats in show
+ - user can select available sheets in a show and proceed to booking
+ - a booking for selected seats will be created in CREATED state
+ - on booking create we will lock seats
+ - for booking user have to make payment
+ - for payment success booking will be marked in SUCCESS state
+ - on payment failure booking will be marked fail and seats relesed
+
+ Entities
+
+ Theatre
+ Screens
+ ScreenSeat
+ Movie
+ Show
+ ShowSeat
+ User
+ Booking
+ Payment

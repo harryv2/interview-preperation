@@ -12,6 +12,6 @@ class User(
     override fun hashCode() = id.hashCode()
 
     override fun toString(): String {
-        return "User($id) $name"
+        return "$name"
     }
 }

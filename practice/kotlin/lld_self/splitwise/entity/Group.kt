@@ -54,24 +54,31 @@ class Group(
     }
 
 
-    // No debt simplification: every ower pays the payer(s) of that expense directly.
+    // Splitwise without "simplify debts": per expense, each person's net (paid - share) is computed
+    // and those with a negative net pay those with a positive net, matched within that expense.
+    // Between any two users only the net of A->B and B->A is shown; nothing is rerouted via a third user.
     private fun getRawTransfers(): List<Transfer> {
-        // owed[(from, to)] = how much `from` owes `to`
         val owed = mutableMapOf<Pair<User, User>, Money>()
 
         for (expense in expenses) {
-            for ((payer, paid) in expense.paidBy) {
-                for ((ower, share) in expense.owedBy) {
-                    if (ower == payer) continue
+            val net = expense.participants.associateWith { expense.netFor(it) }
+            val creditors = net.filterValues { it > Money.ZERO }.toMutableMap()
 
-                    // ower's share is split across payers in proportion to what each paid
-                    val part = Money.paise(share.paise * paid.paise / expense.amount.paise)
-                    owed[ower to payer] = owed.getOrDefault(ower to payer, Money.ZERO) + part
+            for ((debtor, balance) in net) {
+                var debt = -balance
+
+                while (debt > Money.ZERO) {
+                    val (creditor, credit) = creditors.entries.first()
+                    val paid = minOf(debt, credit)
+
+                    owed[debtor to creditor] = owed.getOrDefault(debtor to creditor, Money.ZERO) + paid
+                    debt -= paid
+
+                    if (paid == credit) creditors.remove(creditor) else creditors[creditor] = credit - paid
                 }
             }
         }
 
-        // net A->B against B->A
         val transfers = mutableListOf<Transfer>()
         for ((pair, amount) in owed) {
             val (from, to) = pair

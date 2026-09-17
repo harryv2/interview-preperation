@@ -22,7 +22,7 @@ fun main() {
     val goaTrip = app.createGroup(
         "Goa Trip",
         listOf<Uuid>(alice.id, bob.id, tom.id),
-        false
+        true
     )
 
     goaTrip.addExpense(
@@ -85,5 +85,5 @@ fun main() {
 
     println(goaTrip.getTransfers())
 
-    app.getSummary(alice.id)
+    println(app.getSummary(alice.id))
 }
