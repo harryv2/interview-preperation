@@ -6,7 +6,7 @@ import kotlin.uuid.Uuid
 
 interface SplitStrategy {
     val participants: Set<User>
-    fun getOwned(totalAmount: Money, expenseId: Uuid): Map<User, Money>
+    fun getOwed(totalAmount: Money, expenseId: Uuid): Map<User, Money>
 }
 
 

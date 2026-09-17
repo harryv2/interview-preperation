@@ -8,18 +8,18 @@ class EqualSplitStrategy(
     override val participants: Set<User>
 ) : SplitStrategy {
 
-    override fun getOwned(
+    override fun getOwed(
         totalAmount: Money,
         expenseId: Uuid
     ): Map<User, Money> {
 
-        var splitAmount = mutableMapOf<User, Money>()
+        val splitAmount = mutableMapOf<User, Money>()
 
         participants.forEach {
             splitAmount[it] = Money.paise(totalAmount.paise/ participants.size)
         }
 
-        val totalAllocated = Money.paise(splitAmount.values.sumOf { it -> it.paise })
+        val totalAllocated = Money.paise(splitAmount.values.sumOf { it.paise })
         val rem = totalAmount - totalAllocated
 
         return allocateRemainder(splitAmount, rem, expenseId)

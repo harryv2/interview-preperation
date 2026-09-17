@@ -7,6 +7,10 @@ class User(
     val name: String
 ) {
 
+    // entity identity: two Users are the same user iff they share an id
+    override fun equals(other: Any?) = other is User && other.id == id
+    override fun hashCode() = id.hashCode()
+
     override fun toString(): String {
         return "User($id) $name"
     }

@@ -37,17 +37,17 @@ class Expense(
     }
 
 
-    val ownedBy: Map<User, Money> = splitStrategy.getOwned(amount, id)
+    val owedBy: Map<User, Money> = splitStrategy.getOwed(amount, id)
     val participants = splitStrategy.participants + paidBy.keys
 
     init {
-        val ownedSum = ownedBy.values.sumOf { it.paise }
+        val owedSum = owedBy.values.sumOf { it.paise }
 
-        require(ownedSum == amount.paise) { "Total owned mismatch" }
+        require(owedSum == amount.paise) { "Total owed mismatch" }
     }
 
     fun netFor(user: User): Money {
-        return paidBy.getOrDefault(user, Money.ZERO) - ownedBy.getOrDefault(user, Money.ZERO)
+        return paidBy.getOrDefault(user, Money.ZERO) - owedBy.getOrDefault(user, Money.ZERO)
     }
 
 

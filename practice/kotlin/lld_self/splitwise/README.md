@@ -3,7 +3,7 @@ Splitwise
 - user can open app
 - user can create group with other users
 - user can add expense to groups, can set simplify debt option
-- expense can be paid by mutliple people, and split via multiple strategies among others
+- expense can be paid by multiple people, and split via multiple strategies among others
 - user can add settlement with other user
 - user can see balances in group
 - user can see transfers needed within group

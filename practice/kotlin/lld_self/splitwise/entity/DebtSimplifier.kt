@@ -9,36 +9,37 @@ interface DebtSimplifier{
 
 class GreedySimplifier: DebtSimplifier {
 
-    private data class UserOwned(val user: User, val amount: Money)
+    private data class UserAmount(val user: User, val amount: Money)
 
     override fun simplify(balances: Map<User, Money>): List<Transfer> {
-        var whoHaveGiven = PriorityQueue<UserOwned>(compareBy { it.amount })
-        var whoOwes = PriorityQueue<UserOwned>(compareBy { it.amount })
+        val creditors = PriorityQueue<UserAmount>(compareBy { it.amount })
+        val debtors = PriorityQueue<UserAmount>(compareBy { it.amount })
 
         for(entry in balances) {
             if(entry.value < Money.ZERO) {
-                whoOwes.add(UserOwned(entry.key, entry.value))
-            } else {
-                whoHaveGiven.add(UserOwned(entry.key, entry.value))
+                // store the debt as a positive amount so the arithmetic below just works
+                debtors.add(UserAmount(entry.key, -entry.value))
+            } else if(entry.value > Money.ZERO) {
+                creditors.add(UserAmount(entry.key, entry.value))
             }
         }
 
-        var transfers = mutableListOf<Transfer>()
+        val transfers = mutableListOf<Transfer>()
 
-        while (whoOwes.isNotEmpty() && whoHaveGiven.isNotEmpty()) {
-            var owes = whoOwes.poll()
-            var gets = whoHaveGiven.poll()
+        while (debtors.isNotEmpty() && creditors.isNotEmpty()) {
+            val owes = debtors.poll()
+            val gets = creditors.poll()
 
             val diff = gets.amount - owes.amount
 
             if(diff > Money.ZERO) {
                 transfers.add(Transfer(owes.user, gets.user, owes.amount))
-                whoHaveGiven.add(UserOwned(gets.user, diff))
+                creditors.add(UserAmount(gets.user, diff))
             } else if(diff == Money.ZERO) {
                 transfers.add(Transfer(owes.user, gets.user, owes.amount))
             } else {
                 transfers.add(Transfer(owes.user, gets.user, gets.amount))
-                whoOwes.add(UserOwned(owes.user, owes.amount + diff))
+                debtors.add(UserAmount(owes.user, -diff))
             }
 
         }

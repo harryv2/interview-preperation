@@ -11,7 +11,7 @@ class ExactSplitStrategy(
     override val participants: Set<User>
         get() = splitMap.keys
 
-    override fun getOwned(
+    override fun getOwed(
         totalAmount: Money,
         expenseId: Uuid
     ): Map<User, Money> {

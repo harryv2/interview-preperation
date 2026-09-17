@@ -11,21 +11,21 @@ class PercentageSplitStrategy(
     override val participants: Set<User>
         get() = splitMap.keys
 
-    override fun getOwned(
+    override fun getOwed(
         totalAmount: Money,
         expenseId: Uuid
     ): Map<User, Money> {
 
         val totalPercentage = splitMap.values.sum()
-        require(totalPercentage == 100) { "Percentage total mismatch "}
+        require(totalPercentage == 100) { "Percentage total mismatch" }
 
-        var splitAmount = mutableMapOf<User, Money>()
+        val splitAmount = mutableMapOf<User, Money>()
 
         splitMap.forEach { (user, f) ->
             splitAmount[user] = Money.paise ((totalAmount.paise * f)/100)
         }
 
-        val totalAllocated = Money.paise(splitAmount.values.sumOf { it -> it.paise })
+        val totalAllocated = Money.paise(splitAmount.values.sumOf { it.paise })
         val rem = totalAmount - totalAllocated
 
         return allocateRemainder(splitAmount, rem, expenseId)

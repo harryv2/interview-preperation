@@ -6,23 +6,22 @@ import lld_self.splitwise.entity.Splitwise
 import lld_self.splitwise.strategies.split.EqualSplitStrategy
 import lld_self.splitwise.strategies.split.ExactSplitStrategy
 import lld_self.splitwise.strategies.split.PercentageSplitStrategy
-import kotlin.math.E
 import kotlin.uuid.Uuid
 
 
 fun main() {
 
-    var app = Splitwise()
+    val app = Splitwise()
 
-    var alice = app.createUser("alice")
-    var bib = app.createUser("bob")
+    val alice = app.createUser("alice")
+    val bob = app.createUser("bob")
 
-    var tom = app.createUser("tom")
+    val tom = app.createUser("tom")
 
 
-    var goaTrip = app.createGroup(
+    val goaTrip = app.createGroup(
         "Goa Trip",
-        listOf<Uuid>(alice.id, bib.id, tom.id),
+        listOf<Uuid>(alice.id, bob.id, tom.id),
         false
     )
 
@@ -34,7 +33,7 @@ fun main() {
             paidBy = mapOf(
                 alice to Money.rupees(1000)
             ),
-            splitStrategy = EqualSplitStrategy(setOf(alice, bib, tom))
+            splitStrategy = EqualSplitStrategy(setOf(alice, bob, tom))
         )
     )
 
@@ -48,7 +47,7 @@ fun main() {
             ),
             splitStrategy = PercentageSplitStrategy(
                 mapOf(
-                    bib to 40,
+                    bob to 40,
                     tom to 40,
                     alice to 20
                 )
@@ -66,7 +65,7 @@ fun main() {
             ),
             splitStrategy = ExactSplitStrategy(
                 mapOf(
-                    bib to Money.rupees(1000),
+                    bob to Money.rupees(1000),
                     alice to Money.rupees(500),
                     tom to Money.rupees(500)
                 )
@@ -79,7 +78,7 @@ fun main() {
     println(goaTrip.getTransfers())
 
     goaTrip.addExpense(
-        Expense.Settlement(alice, Money.rupees(200), bib)
+        Expense.Settlement(alice, Money.rupees(200), bob)
     )
 
     println(goaTrip.getBalances())
