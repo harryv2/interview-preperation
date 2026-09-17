@@ -15,6 +15,8 @@ class Seat(
     val basePrice: Money,
 ) {
     val id = Uuid.random()
+
+    override fun toString() = "$name($type, $basePrice)"
 }
 
 class Screen(

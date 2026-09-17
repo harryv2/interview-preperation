@@ -11,26 +11,34 @@ import kotlin.uuid.Uuid
 class Show(
     val movie: Movie,
     val screen: Screen,
-    val starTime: Instant
+    val startTime: Instant
 ) {
     val id = Uuid.random()
-    val lock = ReentrantLock()
+    val endTime = startTime + movie.duration
 
-    val allSeats = screen.seats.associate {
-        Pair(it.id, ShowSeat(it, it.basePrice))
+    private val lock = ReentrantLock()
+
+    private val allSeats: Map<Uuid, ShowSeat> = screen.seats.associate {
+        it.id to ShowSeat(it, it.basePrice)
     }
 
     fun getAvailableSeats(): List<ShowSeat> {
-        return allSeats.values.filter { it.isFree() }
+        lock.withLock {
+            val now = Clock.System.now()
+            return allSeats.values.filter { it.isFree(now) }
+        }
     }
 
     fun reserveSeats(seatIds: List<Uuid>, bookingId: Uuid, ttl: Duration): List<ShowSeat> {
+        require(seatIds.isNotEmpty()) { "No seats selected" }
+        require(seatIds.distinct().size == seatIds.size) { "Duplicate seats selected" }
+
         lock.withLock {
             val now = Clock.System.now()
 
             seatIds.forEach {
-                require(allSeats.contains(it)) { "Seat id wrong" }
-                require(allSeats[it]!!.isFree()) {"Seat ${allSeats[it]!!.seat.name} is taken"}
+                require(allSeats.contains(it)) { "Seat $it does not belong to show $id" }
+                require(allSeats[it]!!.isFree(now)) { "Seat ${allSeats[it]!!.seat.name} is taken" }
             }
 
             val showSeats = seatIds.map { allSeats[it]!! }
@@ -49,11 +57,13 @@ class Show(
         }
     }
 
-    fun releaseSeats(booking: Booking){
+    fun releaseSeats(booking: Booking) {
         lock.withLock {
             booking.showSeats.forEach {
                 it.unlock(booking)
             }
         }
     }
+
+    override fun toString() = "${movie.name} | ${screen.name} | $startTime"
 }

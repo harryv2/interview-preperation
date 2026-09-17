@@ -1,7 +1,7 @@
 package lld_self.bookmyshow.entities
 
 import kotlin.time.Clock
-import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Instant
 import kotlin.uuid.Uuid
 
 
@@ -17,37 +17,42 @@ class Booking(
     val user: User,
     val show: Show,
     val showSeats: List<ShowSeat>,
+    val expiresAt: Instant,
 ) {
     var status = BookingStatus.CREATED
         private set
     val totalAmount = Money.paise(showSeats.sumOf { it.price.paise })
     val createdAt = Clock.System.now()
-    val expiresAt = createdAt + 10.minutes
 
     var payment: Payment? = null
         private set
 
+    fun isExpired(): Boolean {
+        if (status == BookingStatus.EXPIRED) return true
+        if (status == BookingStatus.CREATED && Clock.System.now() > expiresAt) return true
+        return false
+    }
 
-    fun markExpired(){
-        require(Clock.System.now() > expiresAt) {"No expired yet"}
-        check(status == BookingStatus.CREATED) {"State not created"}
-
+    @Synchronized
+    fun markExpired() {
+        require(Clock.System.now() > expiresAt) { "Booking $id has not expired yet" }
+        check(status == BookingStatus.CREATED) { "Booking $id is $status, cannot expire" }
         status = BookingStatus.EXPIRED
     }
 
-    fun isExpired(): Boolean {
-        return status == BookingStatus.EXPIRED || (status == BookingStatus.CREATED && Clock.System.now() > expiresAt)
-    }
-
+    @Synchronized
     fun markPaid(payment: Payment) {
-        check(status == BookingStatus.CREATED) {"State not created"}
-
+        check(status == BookingStatus.CREATED) { "Booking $id is $status, cannot mark paid" }
         status = BookingStatus.SUCCESS
         this.payment = payment
     }
 
+    @Synchronized
     fun markFailed() {
-        check(status == BookingStatus.CREATED) {"State not created"}
+        check(status == BookingStatus.CREATED) { "Booking $id is $status, cannot mark failed" }
         status = BookingStatus.FAILED
     }
+
+    override fun toString() =
+        "Booking(${user.name}, seats=${showSeats.map { it.seat.name }}, amount=$totalAmount, status=$status)"
 }

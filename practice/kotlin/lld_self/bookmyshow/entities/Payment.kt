@@ -24,7 +24,7 @@ data class Payment(
 }
 
 
-class PaymentFailedException(message: String): RuntimeException()
+class PaymentFailedException(message: String) : RuntimeException(message)
 
 
 interface PaymentMethod {
