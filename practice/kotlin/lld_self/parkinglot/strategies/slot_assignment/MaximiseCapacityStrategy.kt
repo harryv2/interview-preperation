@@ -12,17 +12,16 @@ class MaximiseCapacityStrategy : SlotAssignmentStrategy {
         vehicle: Vehicle
     ): Slot? {
         var preferredType = FitRules.spotsFor(vehicle.type)
-        var slot : Slot? = null;
 
         for(type in preferredType) {
             for (floor in floors) {
-                slot = floor.reserve(type, vehicle)
+                var slot = floor.reserve(type, vehicle)
                 if (slot != null) {
-                    break
+                    return slot
                 }
             }
         }
 
-        return slot
+        return null
     }
 }

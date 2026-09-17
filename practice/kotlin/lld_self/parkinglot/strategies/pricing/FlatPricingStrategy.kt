@@ -4,9 +4,9 @@ import lld_self.parkinglot.entity.Money
 import lld_self.parkinglot.entity.SlotType
 import lld_self.parkinglot.entity.Ticket
 import kotlin.math.ceil
-import kotlin.time.Clock
 import kotlin.time.Duration
 import kotlin.time.DurationUnit
+import kotlin.time.Instant
 
 
 var slotWisePrice =  hashMapOf<SlotType, Long>(
@@ -21,11 +21,10 @@ fun calculateCeilHours(duration: Duration): Long {
 
 class FlatPricingStrategy : PricingStrategy {
 
-    override fun getPrice(ticket: Ticket): Money {
+    override fun getPrice(ticket: Ticket, exitTime: Instant): Money {
         var slot = ticket.slot
-        var now = Clock.System.now()
 
-        var timeDiff = now - ticket.creationTime
+        var timeDiff = exitTime - ticket.creationTime
         var hours = calculateCeilHours(timeDiff)
 
         return Money(hours * slotWisePrice[slot.type]!! * 100)

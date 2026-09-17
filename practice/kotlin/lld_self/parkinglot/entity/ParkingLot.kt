@@ -4,13 +4,15 @@ import lld_self.parkinglot.strategies.payemnts.PaymentMethod
 import lld_self.parkinglot.strategies.payemnts.PaymentMethodStrategy
 import lld_self.parkinglot.strategies.pricing.PricingStrategy
 import lld_self.parkinglot.strategies.slot_assignment.SlotAssignmentStrategy
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.time.Clock
 import kotlin.uuid.Uuid
 
 
 enum class ParkResultStatus {
     SUCCESS,
-    NO_FREE_SLOTS
+    NO_FREE_SLOTS,
+    ALREADY_PARKED
 }
 
 data class ParkResult(
@@ -25,8 +27,8 @@ class ParkingLot(
 ) {
 
     private var floorNumberMap = hashMapOf<String, Floor>()
-    private var parkedPlates = hashMapOf<String, Uuid>()
-    private var issuedActiveTickets = hashMapOf<Uuid, Ticket>()
+    private var parkedPlates = ConcurrentHashMap<String, Uuid>()
+    private var issuedActiveTickets = ConcurrentHashMap<Uuid, Ticket>()
 
 
     init {
@@ -45,14 +47,21 @@ class ParkingLot(
 
 
     internal fun park(vehicle: Vehicle, gateId: String): ParkResult {
-        require(!parkedPlates.contains(vehicle.licensePlate)) {
-            "Vehicle with ${vehicle.licensePlate} already parked"
+        var ticketId = Uuid.random()
+
+        // claim the plate first, so two gates can't park the same vehicle twice
+        if (parkedPlates.putIfAbsent(vehicle.licensePlate, ticketId) != null) {
+            return ParkResult(ParkResultStatus.ALREADY_PARKED, null)
         }
 
-        val slot = slotStrategy.getFreeSlot(floors, vehicle) ?: return ParkResult(ParkResultStatus.NO_FREE_SLOTS, null)
+        val slot = slotStrategy.getFreeSlot(floors, vehicle)
+        if (slot == null) {
+            parkedPlates.remove(vehicle.licensePlate)
+            return ParkResult(ParkResultStatus.NO_FREE_SLOTS, null)
+        }
 
         val ticket = Ticket(
-            id = Uuid.random(),
+            id = ticketId,
             Clock.System.now(),
             vehicle,
             slot,
@@ -60,37 +69,49 @@ class ParkingLot(
         )
 
         issuedActiveTickets[ticket.id] = ticket
-        parkedPlates[vehicle.licensePlate] = ticket.id
 
         return ParkResult(ParkResultStatus.SUCCESS, ticket)
     }
 
 
     internal fun getFare(vehicle: Vehicle): Money {
-        require(parkedPlates.contains(vehicle.licensePlate)) {"Vehicle ${vehicle.licensePlate} not found in system"}
-        var ticketId = parkedPlates[vehicle.licensePlate]
-        var ticket = issuedActiveTickets[ticketId]!!
-
-        return pricingStrategy.getPrice(ticket)
+        var ticket = findActiveTicket(vehicle)
+        return stampExit(ticket)
     }
 
     internal fun makePayment(vehicle: Vehicle, paymentMethod: PaymentMethodStrategy): Ticket {
-        require(parkedPlates.contains(vehicle.licensePlate)) {"Vehicle ${vehicle.licensePlate} not found in system"}
-        var ticketId = parkedPlates[vehicle.licensePlate]
+        var ticket = findActiveTicket(vehicle)
+        var fare = stampExit(ticket)
 
-        var ticket = issuedActiveTickets[ticketId]!!
-
-        var payment = paymentMethod.pay(pricingStrategy.getPrice(ticket))
-
+        var payment = paymentMethod.pay(fare)
         ticket.markPaid(payment)
 
-        var floor = floorNumberMap[ticket.slot.floorNumber]!!
-        floor.markFree(ticket.slot)
+        // whoever removes the plate owns the exit, so the slot can't be freed twice
+        if (parkedPlates.remove(ticket.vehicle.licensePlate, ticket.id)) {
+            issuedActiveTickets.remove(ticket.id)
 
-        parkedPlates.remove(ticket.vehicle.licensePlate)
-        issuedActiveTickets.remove(ticket.id)
+            var floor = floorNumberMap[ticket.slot.floorNumber]!!
+            floor.markFree(ticket.slot)
+        }
 
         return ticket
+    }
+
+    private fun findActiveTicket(vehicle: Vehicle): Ticket {
+        var ticketId = parkedPlates[vehicle.licensePlate]
+        var ticket = ticketId?.let { issuedActiveTickets[it] }
+
+        return requireNotNull(ticket) {"Vehicle ${vehicle.licensePlate} not found in system"}
+    }
+
+    // exit time and fare are stamped once, so quote and charge always agree
+    private fun stampExit(ticket: Ticket): Money {
+        if (ticket.fare == null) {
+            var now = Clock.System.now()
+            ticket.markExit(now, pricingStrategy.getPrice(ticket, now))
+        }
+
+        return ticket.fare!!
     }
 }
 

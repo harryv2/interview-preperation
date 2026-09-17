@@ -13,17 +13,15 @@ class NearestFirstSlotAllocation : SlotAssignmentStrategy {
     ): Slot? {
         var preferredType = FitRules.spotsFor(vehicle.type)
 
-        var slot : Slot? = null;
-
         for(floor in floors) {
             for(type in preferredType) {
-                slot = floor.reserve(type, vehicle)
+                var slot = floor.reserve(type, vehicle)
                 if(slot != null) {
-                    break
+                    return slot
                 }
             }
         }
 
-        return slot
+        return null
     }
 }
