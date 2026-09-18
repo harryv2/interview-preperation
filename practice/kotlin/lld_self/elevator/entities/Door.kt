@@ -7,7 +7,9 @@ enum class DoorState {
     CLOSING
 }
 
-class Door {
+class Door(
+    private val onStateChanged: (DoorState) -> Unit = {}
+) {
     var state = DoorState.CLOSED
         private set
 
@@ -59,5 +61,6 @@ class Door {
     private fun transition(to: DoorState) {
         state = to
         ticksInState = 0
+        onStateChanged(to)
     }
 }

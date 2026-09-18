@@ -2,6 +2,7 @@ package lld_self.elevator
 
 import lld_self.elevator.entities.Direction
 import lld_self.elevator.entities.Elevator
+import lld_self.elevator.entities.HallDisplay
 import lld_self.elevator.entities.HallPanel
 import lld_self.elevator.strategies.ElevatorAssignmentStrategy
 import lld_self.elevator.strategies.ElevatorMovementStrategy
@@ -13,7 +14,13 @@ class ElevatorController(
     val movementStrategy: ElevatorMovementStrategy,
 ) {
 
-    var elevators = mutableListOf<Elevator>()
+    val elevators: List<Elevator> = List(elevatorCount) {
+        Elevator(
+            "elevator-${it + 1}",
+            movementStrategy
+        )
+    }
+
     private val hallPanels = Array(floorCount) {
         HallPanel(
             it,
@@ -21,14 +28,18 @@ class ElevatorController(
         )
     }
 
+    private val hallDisplays = Array(floorCount) {
+        HallDisplay(
+            it,
+            elevators
+        )
+    }
+
     init {
-        for (i in 1..elevatorCount) {
-            elevators.add(
-                Elevator(
-                    "elevator-$i",
-                    movementStrategy
-                )
-            )
+        hallDisplays.forEach { display ->
+            elevators.forEach { elevator ->
+                elevator.addObserver(display)
+            }
         }
     }
 
@@ -38,10 +49,15 @@ class ElevatorController(
         return hallPanels[floor]
     }
 
+    fun getHallDisplay(floor: Int): HallDisplay {
+        require(floor in 0..<floorCount) { "Invalid floor number" }
+        return hallDisplays[floor]
+    }
+
 
     internal fun handleHallRequest(floor: Int, direction: Direction): Elevator {
         var elevator = assignmentStrategy.pick(elevators, floor, direction)
-        elevator.addStop(floor)
+        elevator.addStop(floor, direction)
         return elevator
     }
 
