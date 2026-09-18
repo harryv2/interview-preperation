@@ -1,0 +1,21 @@
+Elevator
+
+- user can press a up or down button to call elevator on hall panel
+- elevator will come and door will open
+- user will enter elevator
+- user will press desired floor button on elevator panel
+- elevator will add that floor to its list of stops and start moving
+
+
+Entities
+
+Elevator
+ElevatorPanel
+HallPanel
+Door
+ElevatorControl
+
+
+Swappable logic
+- Control can schedule which elevator will service user request from hall
+- Elevator can have its motion control, where to go first
