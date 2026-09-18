@@ -4,6 +4,7 @@ import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 import kotlin.time.Clock
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
 
@@ -65,5 +66,14 @@ class Show(
         }
     }
 
+    fun overlaps(other: Show): Boolean {
+        if (screen.id != other.screen.id) return false
+        return startTime < other.endTime + CLEANUP_BUFFER && other.startTime < endTime + CLEANUP_BUFFER
+    }
+
     override fun toString() = "${movie.name} | ${screen.name} | $startTime"
+
+    companion object {
+        private val CLEANUP_BUFFER = 30.minutes
+    }
 }

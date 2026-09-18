@@ -11,9 +11,12 @@ import lld_self.bookmyshow.entities.Screen
 import lld_self.bookmyshow.entities.Seat
 import lld_self.bookmyshow.entities.SeatType
 import lld_self.bookmyshow.entities.Show
+import lld_self.bookmyshow.entities.ShowSeat
 import lld_self.bookmyshow.entities.Theater
 import lld_self.bookmyshow.entities.User
-import java.util.concurrent.ConcurrentHashMap
+import lld_self.bookmyshow.repository.BookingRepository
+import lld_self.bookmyshow.repository.ShowRepository
+import lld_self.bookmyshow.repository.TheaterRepository
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import kotlin.time.Clock
@@ -24,12 +27,12 @@ import kotlin.uuid.Uuid
 
 
 class BookMyShowService(
+    private val theaterRepo: TheaterRepository,
+    private val showRepo: ShowRepository,
+    private val bookingRepo: BookingRepository,
     private val lockTtl: Duration = 10.minutes,
     sweepInterval: Duration = 1.minutes,
 ) {
-
-    private val cityWiseTheatres = ConcurrentHashMap<String, MutableList<Theater>>()
-    private val bookings = ConcurrentHashMap<Uuid, Booking>()
 
     fun createTheatre(name: String, city: String, location: Location, screens: List<String>): Theater {
         val theaterId = Uuid.random()
@@ -42,8 +45,7 @@ class BookMyShowService(
             screens = screens.map { Screen(it, theaterId, buildSeats()) }
         )
 
-        cityWiseTheatres.computeIfAbsent(city) { mutableListOf() }.add(theater)
-        return theater
+        return theaterRepo.save(theater)
     }
 
     private fun buildSeats(): List<Seat> {
@@ -55,41 +57,68 @@ class BookMyShowService(
         }
     }
 
-    fun addShow(theater: Theater, movie: Movie, screen: Screen, startTime: Instant): Show {
-        return theater.addShow(movie, screen.id, startTime)
+    fun addShow(theaterId: Uuid, movie: Movie, screenId: Uuid, startTime: Instant): Show {
+        val theater = theaterRepo.findById(theaterId)
+        require(theater != null) { "Theater not found" }
+
+        val screen = theater.screenMap[screenId]
+        require(screen != null) { "Screen not in theater ${theater.name}" }
+
+        val show = Show(movie, screen, startTime)
+
+        synchronized(theater) {
+            val clash = showRepo.findByScreen(screenId).firstOrNull { it.overlaps(show) }
+            require(clash == null) { "Show overlaps with existing show: $clash" }
+
+            return showRepo.save(show)
+        }
     }
 
     fun getMovies(city: String): List<Movie> {
-        val theaters = cityWiseTheatres[city] ?: return emptyList()
+        val now = Clock.System.now()
 
-        return theaters
-            .flatMap { it.getUpcomingShows() }
+        return theaterRepo.findByCity(city)
+            .flatMap { showRepo.findByTheater(it.id) }
+            .filter { it.startTime > now }
             .map { it.movie }
             .distinct()
     }
 
     fun getShows(city: String, movie: Movie): Map<Theater, List<Show>> {
-        val theaters = cityWiseTheatres[city] ?: return emptyMap()
+        val now = Clock.System.now()
 
-        return theaters
-            .associateWith { it.getShows(movie) }
+        return theaterRepo.findByCity(city)
+            .associateWith { theater ->
+                showRepo.findByTheater(theater.id)
+                    .filter { it.movie == movie && it.startTime > now }
+                    .sortedBy { it.startTime }
+            }
             .filterValues { it.isNotEmpty() }
     }
 
-    fun createBooking(user: User, show: Show, seatIds: List<Uuid>): Booking {
+    fun getAvailableSeats(showId: Uuid): List<ShowSeat> {
+        val show = showRepo.findById(showId)
+        require(show != null) { "Show not found" }
+
+        return show.getAvailableSeats()
+    }
+
+    fun createBooking(user: User, showId: Uuid, seatIds: List<Uuid>): Booking {
         require(seatIds.size <= MAX_SEATS_PER_BOOKING) { "At most $MAX_SEATS_PER_BOOKING seats per booking" }
+
+        val show = showRepo.findById(showId)
+        require(show != null) { "Show not found" }
 
         val bookingId = Uuid.random()
 
         val showSeats = show.reserveSeats(seatIds, bookingId, lockTtl)
 
         val booking = Booking(bookingId, user, show, showSeats, expiresAt = Clock.System.now() + lockTtl)
-        bookings[bookingId] = booking
-        return booking
+        return bookingRepo.save(booking)
     }
 
     fun makePayment(bookingId: Uuid, paymentMethod: PaymentMethod): Booking {
-        val booking = bookings[bookingId]
+        val booking = bookingRepo.findById(bookingId)
         require(booking != null) { "Booking not found" }
 
         if (booking.status == BookingStatus.CREATED && booking.isExpired()) expire(booking)
@@ -103,7 +132,7 @@ class BookMyShowService(
             booking.markFailed()
             booking.show.releaseSeats(booking)
         }
-        return booking
+        return bookingRepo.save(booking)
     }
 
     private val sweeper = Executors.newSingleThreadScheduledExecutor { r ->
@@ -118,8 +147,8 @@ class BookMyShowService(
     }
 
     private fun sweepExpiredBookings() {
-        bookings.values.forEach {
-            if (it.status == BookingStatus.CREATED && it.isExpired()) {
+        bookingRepo.findByStatus(BookingStatus.CREATED).forEach {
+            if (it.isExpired()) {
                 runCatching { expire(it) }
             }
         }
@@ -128,6 +157,7 @@ class BookMyShowService(
     private fun expire(booking: Booking) {
         booking.markExpired()
         booking.show.releaseSeats(booking)
+        bookingRepo.save(booking)
     }
 
     companion object {
