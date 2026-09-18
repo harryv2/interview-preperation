@@ -1,6 +1,7 @@
 package lld_self.elevator.entities
 
 import lld_self.elevator.strategies.ElevatorMovementStrategy
+import lld_self.elevator.strategies.Stop
 import java.util.TreeSet
 
 
@@ -64,20 +65,6 @@ class Elevator(
         observers.add(observer)
     }
 
-    fun highestPendingStop(): Int? {
-        return listOfNotNull(
-            upStops.takeIf { it.isNotEmpty() }?.last(),
-            downStops.takeIf { it.isNotEmpty() }?.last()
-        ).maxOrNull()
-    }
-
-    fun lowestPendingStop(): Int? {
-        return listOfNotNull(
-            upStops.takeIf { it.isNotEmpty() }?.first(),
-            downStops.takeIf { it.isNotEmpty() }?.first()
-        ).minOrNull()
-    }
-
     internal fun addStop(floor: Int) {
         val direction = if (floor > currentFloor) Direction.UP else Direction.DOWN
         addStop(floor, direction)
@@ -102,40 +89,28 @@ class Elevator(
             return
         }
 
-        val nextStop = movementStrategy.nextStop(currentFloor, direction, upStops, downStops)
+        val next = movementStrategy.nextStop(currentFloor, direction, upStops, downStops)
 
-        if (nextStop == null) {
+        if (next == null) {
             direction = Direction.IDLE
             state = ElevatorState.STOPPED
             return
         }
 
-        if (nextStop == currentFloor) {
-            arrive()
+        if (next.floor == currentFloor) {
+            arrive(next)
             return
         }
 
-        direction = if (nextStop > currentFloor) Direction.UP else Direction.DOWN
+        direction = if (next.floor > currentFloor) Direction.UP else Direction.DOWN
         state = ElevatorState.MOVING
         currentFloor += if (direction == Direction.UP) 1 else -1
     }
 
-    private fun arrive() {
-        val sameWay = when (direction) {
-            Direction.UP -> upStops
-            Direction.DOWN -> downStops
-            Direction.IDLE -> null
-        }
-
-        // not in the set for the sweep we're on means we rode here to reverse, so flip now
-        if (sameWay?.remove(currentFloor) != true) {
-            if (upStops.remove(currentFloor)) {
-                direction = Direction.UP
-            } else if (downStops.remove(currentFloor)) {
-                direction = Direction.DOWN
-            }
-        }
-
+    private fun arrive(stop: Stop) {
+        direction = stop.direction
+        val stops = if (direction == Direction.UP) upStops else downStops
+        stops.remove(stop.floor)
         state = ElevatorState.STOPPED
         door.open()
     }
