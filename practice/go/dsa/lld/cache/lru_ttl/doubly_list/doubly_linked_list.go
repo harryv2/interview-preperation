@@ -67,6 +67,9 @@ func (list *DoublyLinkedList[T, U]) Remove(node *DoublyLinkedListNode[T, U]) {
 		list.tail = prev
 	}
 
+	node.next = nil
+	node.prev = nil
+
 	list.Size--
 }
 
@@ -75,7 +78,7 @@ func (list *DoublyLinkedList[T, U]) RemoveFirst() (*DoublyLinkedListNode[T, U], 
 		return nil, fmt.Errorf("list empty")
 	}
 
-	var head = list.head
+	head := list.head
 	list.Remove(head)
 	return head, nil
 }
@@ -85,7 +88,7 @@ func (list *DoublyLinkedList[T, U]) RemoveLast() (*DoublyLinkedListNode[T, U], e
 		return nil, fmt.Errorf("list empty")
 	}
 
-	var tail = list.tail
+	tail := list.tail
 	list.Remove(tail)
 	return tail, nil
 }
