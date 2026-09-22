@@ -5,7 +5,7 @@ class Inventory(
     initialInventory: List<VendingSlot>
 ) {
 
-    private var slotMap = HashMap<SlotId, VendingSlot>()
+    private val slotMap = LinkedHashMap<SlotId, VendingSlot>()
 
     init {
         initialInventory.forEach { it ->

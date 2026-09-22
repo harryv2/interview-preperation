@@ -1,5 +1,7 @@
 package lld_self.vending_machine.entities
 
+import kotlin.math.abs
+
 
 data class Money(
     val paise: Long
@@ -14,7 +16,9 @@ data class Money(
     }
 
     override fun toString(): String {
-        return "Rs ${paise / 100}.${paise % 100}"
+        val sign = if (paise < 0) "-" else ""
+        val absolute = abs(paise)
+        return "Rs $sign${absolute / 100}.${"%02d".format(absolute % 100)}"
     }
 
     companion object {

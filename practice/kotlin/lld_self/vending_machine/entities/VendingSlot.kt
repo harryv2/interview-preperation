@@ -12,12 +12,14 @@ class VendingSlot(
 ) {
 
     fun add(amount: Int) {
-        quantity += quantity
+        require(amount > 0) { "Amount must be positive" }
+        quantity += amount
     }
 
     fun isEmpty(): Boolean = quantity == 0
 
     fun remove() {
+        check(quantity > 0) { "Slot $id is empty" }
         quantity -= 1
     }
 }

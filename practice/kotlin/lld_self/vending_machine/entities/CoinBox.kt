@@ -16,7 +16,7 @@ class CoinBox(
     private val changeMakerStrategy: ChangeMakerStrategy,
 ) {
 
-    val bank = HashMap<Coin, Int>()
+    private val bank = HashMap<Coin, Int>()
 
     init {
         coins.forEach {
@@ -25,7 +25,7 @@ class CoinBox(
         }
     }
 
-    var heldCoins = mutableListOf<Coin>()
+    private var heldCoins = mutableListOf<Coin>()
 
 
     val heldAmount: Money
@@ -38,7 +38,7 @@ class CoinBox(
         }
 
 
-    fun addToHelp(coin: Coin) {
+    fun addToHeld(coin: Coin) {
         heldCoins.add(coin)
     }
 
@@ -60,27 +60,25 @@ class CoinBox(
 
 
     fun settleUp(amount: Money): Map<Coin, Int> {
-        val available = allCoins() + heldCoins
-
         val toReturn = heldAmount - amount
+        require(toReturn >= Money.ZERO) { "Held amount is less than $amount" }
+
+        val available = allCoins() + heldCoins
         val change = changeMakerStrategy.changeFor(toReturn, available)
 
+        require(change != null) { "Change can not be given" }
 
-        require(change != null) { "Change not made" }
+        heldCoins.forEach {
+            bank[it] = (bank[it] ?: 0) + 1
+        }
+        heldCoins = mutableListOf<Coin>()
 
         change.forEach { (coin, i) ->
 
-            require((bank[coin] ?: 0) >= i) { "Change can not be give" }
+            require((bank[coin] ?: 0) >= i) { "Change can not be given" }
 
             bank[coin] = bank[coin]!! - i
         }
-
-        heldCoins.forEach {
-            bank.putIfAbsent(it, 0)
-            bank[it] = bank[it]!! + 1
-        }
-
-        heldCoins = mutableListOf<Coin>()
 
         return change
 

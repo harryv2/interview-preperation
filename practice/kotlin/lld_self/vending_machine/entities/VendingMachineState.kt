@@ -31,8 +31,18 @@ class IdleState(
 ) : VendingMachineStateHandler {
 
     override fun insertCoin(coin: Coin) {
-        vendingMachine.coinBox.addToHelp(coin)
+        vendingMachine.coinBox.addToHeld(coin)
         vendingMachine.moveTo(VendingMachineState.COIN_INSERTED)
+    }
+
+    override fun cancel(): Map<Coin, Int> {
+        return emptyMap()
+    }
+
+    override fun restock(quantityMap: Map<SlotId, Int>) {
+        quantityMap.forEach { (id, count) ->
+            vendingMachine.inventory.restock(id, count)
+        }
     }
 
 }
@@ -43,18 +53,20 @@ class CoinInsertedState(
 ) : VendingMachineStateHandler {
 
     override fun insertCoin(coin: Coin) {
-        vendingMachine.coinBox.addToHelp(coin)
+        vendingMachine.coinBox.addToHeld(coin)
     }
 
     override fun selectSlot(slotId: SlotId) {
         val slot = vendingMachine.inventory.find(slotId)
         check(slot != null) { "Invalid slotId $slotId" }
 
-        require(slot.product.price <= vendingMachine.coinBox.heldAmount) { "Please add more money" }
-
         require(!slot.isEmpty()) { "Slot is empty" }
 
-        vendingMachine.coinBox.canMakeChange(slot.product.price)
+        val heldAmount = vendingMachine.coinBox.heldAmount
+        require(slot.product.price <= heldAmount) { "Please add more money" }
+
+        val changeDue = heldAmount - slot.product.price
+        require(vendingMachine.coinBox.canMakeChange(changeDue)) { "Exact change not available" }
 
         vendingMachine.selectedSlotId = slotId
         vendingMachine.moveTo(VendingMachineState.DISPENSING)
@@ -78,16 +90,18 @@ class DispensingState(
     }
 
     override fun dispense(): Purchase {
-        require(vendingMachine.selectedSlotId != null) { "Slot not selected" }
-        vendingMachine.inventory.remove(vendingMachine.selectedSlotId!!)
+        val slotId = vendingMachine.selectedSlotId
+        require(slotId != null) { "Slot not selected" }
 
-        val slot = vendingMachine.inventory.find(vendingMachine.selectedSlotId!!)
-        check(slot != null) { "Invalid slotId $vendingMachine.selectedSlotId" }
+        val slot = vendingMachine.inventory.find(slotId)
+        check(slot != null) { "Invalid slotId $slotId" }
 
         val heldAmount = vendingMachine.coinBox.heldAmount
 
         val change = vendingMachine.coinBox.settleUp(slot.product.price)
+        vendingMachine.inventory.remove(slotId)
 
+        vendingMachine.selectedSlotId = null
         if (vendingMachine.inventory.isCompletelyEmpty()) {
             vendingMachine.moveTo(VendingMachineState.OUT_OF_SERVICE)
         } else {
@@ -109,6 +123,10 @@ class OutOfServiceState(
     override fun restock(quantityMap: Map<SlotId, Int>) {
         quantityMap.forEach { (id, count) ->
             vendingMachine.inventory.restock(id, count)
+        }
+
+        if (!vendingMachine.inventory.isCompletelyEmpty()) {
+            vendingMachine.moveTo(VendingMachineState.IDLE)
         }
     }
 }
