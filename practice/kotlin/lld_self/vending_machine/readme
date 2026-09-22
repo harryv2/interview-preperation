@@ -1,0 +1,25 @@
+Vending Machine
+
+- User will enter coin
+- machine will show current amount entered by user
+- user can select slot to dispense
+- machine will dispense product from slot and return change
+
+
+
+Entities
+
+core
+Vending Machine
+Product
+VendingSlot
+CoinBox
+
+Vending machine state
+
+IDLE
+COIN_INSERTED
+DISPENSING
+
+OUT_OF_SERVICE
+
