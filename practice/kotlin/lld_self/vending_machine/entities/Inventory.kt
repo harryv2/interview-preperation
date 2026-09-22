@@ -1,5 +1,8 @@
 package lld_self.vending_machine.entities
 
+import lld_self.vending_machine.exceptions.SlotEmptyException
+import lld_self.vending_machine.exceptions.SlotNotFoundException
+
 
 class Inventory(
     initialInventory: List<VendingSlot>
@@ -8,7 +11,7 @@ class Inventory(
     private val slotMap = LinkedHashMap<SlotId, VendingSlot>()
 
     init {
-        initialInventory.forEach { it ->
+        initialInventory.forEach {
             slotMap[it.id] = it
         }
     }
@@ -21,20 +24,20 @@ class Inventory(
         return slotMap[slotId]
     }
 
-    fun remove(slotId: SlotId) {
-        val slot = slotMap[slotId]
-        checkNotNull(slot) { "No slot $slotId" }
-        check(!slot.isEmpty()) { "Slot $slotId is empty" }
+    fun dispenseOne(slotId: SlotId) {
+        val slot = slotMap[slotId] ?: throw SlotNotFoundException(slotId)
+        if (slot.isEmpty()) {
+            throw SlotEmptyException(slotId)
+        }
         slot.remove()
     }
 
     fun restock(slotId: SlotId, quantity: Int) {
-        val slot = slotMap[slotId]
-        checkNotNull(slot) { "No slot $slotId" }
+        val slot = slotMap[slotId] ?: throw SlotNotFoundException(slotId)
         slot.add(quantity)
     }
 
-    fun isCompletelyEmpty(): Boolean {
+    fun isSoldOut(): Boolean {
         return slotMap.all { it.value.isEmpty() }
     }
 }

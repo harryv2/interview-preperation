@@ -1,11 +1,9 @@
 package lld_self.vending_machine
 
-import lld_self.vending_machine.entities.ActionNotAllowedException
 import lld_self.vending_machine.entities.Coin
 import lld_self.vending_machine.entities.Money
 import lld_self.vending_machine.entities.Product
 import lld_self.vending_machine.entities.SlotId
-import lld_self.vending_machine.entities.VendingMachine
 import lld_self.vending_machine.entities.VendingSlot
 import lld_self.vending_machine.strategies.GreedyChangeMaker
 
@@ -96,9 +94,7 @@ private fun attempt(label: String, action: () -> Unit) {
     try {
         action()
         println("  $label -> allowed")
-    } catch (e: ActionNotAllowedException) {
-        println("  $label -> rejected: ${e.message}")
-    } catch (e: IllegalArgumentException) {
+    } catch (e: RuntimeException) {
         println("  $label -> rejected: ${e.message}")
     }
 }

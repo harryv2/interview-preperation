@@ -33,3 +33,12 @@ data class Money(
         }
     }
 }
+
+
+enum class Coin(val money: Money) {
+    ONE(Money.rupees(1)),
+    TWO(Money.rupees(2)),
+    FIVE(Money.rupees(5)),
+    TEN(Money.rupees(10)),
+    TWENTY(Money.rupees(20))
+}
