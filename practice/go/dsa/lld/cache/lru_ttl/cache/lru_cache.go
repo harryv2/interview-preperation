@@ -64,14 +64,14 @@ func (cache *LruCache[T, U]) Contains(key T) bool {
 	}
 
 	if node.Value.expiryTime.Before(cache.clock.Now()) {
-		cache.delete(node)
+		cache.deleteLocked(node)
 		return false
 	}
 
 	return true
 }
 
-func (cache *LruCache[T, U]) evict() {
+func (cache *LruCache[T, U]) evictLocked() {
 	first, err := cache.list.RemoveFirst()
 	if err != nil {
 		return
@@ -84,31 +84,64 @@ func (cache *LruCache[T, U]) Add(key T, value U, ttl time.Duration) {
 	cache.mu.Lock()
 	defer cache.mu.Unlock()
 
+	cache.putLocked(key, value, cache.clock.Now().Add(ttl))
+}
+
+func (cache *LruCache[T, U]) putLocked(key T, value U, expiry time.Time) {
 	node, ok := cache.cacheMap[key]
 	if ok {
 		node.Value.val = value
-		node.Value.expiryTime = cache.clock.Now().Add(ttl)
+		node.Value.expiryTime = expiry
 		cache.list.Remove(node)
 		cache.list.AddNodeLast(node)
 		return
 	}
 
 	if len(cache.cacheMap) >= cache.maxSize {
-		cache.evict()
+		cache.evictLocked()
 	}
 
 	node = &doubly_list.DoublyLinkedListNode[T, cacheNode[U]]{
 		Key: key,
 		Value: cacheNode[U]{
 			val:        value,
-			expiryTime: cache.clock.Now().Add(ttl),
+			expiryTime: expiry,
 		},
 	}
 	cache.cacheMap[key] = node
 	cache.list.AddNodeLast(node)
 }
 
-func (cache *LruCache[T, U]) delete(node *doubly_list.DoublyLinkedListNode[T, cacheNode[U]]) {
+func (cache *LruCache[T, U]) Delete(key T) {
+	cache.mu.Lock()
+	defer cache.mu.Unlock()
+
+	if node, ok := cache.cacheMap[key]; ok {
+		cache.deleteLocked(node)
+	}
+}
+
+func (cache *LruCache[T, U]) applyAll(order []T, buf map[T]write[U]) {
+	cache.mu.Lock()
+	defer cache.mu.Unlock()
+
+	now := cache.clock.Now()
+
+	for _, key := range order {
+		w := buf[key]
+
+		if w.deleted {
+			if node, ok := cache.cacheMap[key]; ok {
+				cache.deleteLocked(node)
+			}
+			continue
+		}
+
+		cache.putLocked(key, w.value, now.Add(w.ttl))
+	}
+}
+
+func (cache *LruCache[T, U]) deleteLocked(node *doubly_list.DoublyLinkedListNode[T, cacheNode[U]]) {
 	cache.list.Remove(node)
 	delete(cache.cacheMap, node.Key)
 }
@@ -127,7 +160,7 @@ func (cache *LruCache[T, U]) Get(key T) (U, bool) {
 	now := cache.clock.Now()
 
 	if node.Value.expiryTime.Before(now) {
-		cache.delete(node)
+		cache.deleteLocked(node)
 		return zero, false
 	}
 
@@ -151,7 +184,7 @@ func (cache *LruCache[T, U]) sweep() {
 	}
 
 	for _, node := range expired {
-		cache.delete(node)
+		cache.deleteLocked(node)
 	}
 }
 
