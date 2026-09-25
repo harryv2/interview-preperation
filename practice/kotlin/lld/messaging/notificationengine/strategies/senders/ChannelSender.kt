@@ -1,0 +1,12 @@
+package lld.messaging.notificationengine.strategies.senders
+
+import lld.messaging.notificationengine.entity.Channel
+import lld.messaging.notificationengine.entity.Notification
+
+interface ChannelSender {
+    val channel: Channel
+
+    fun send(notification: Notification)
+}
+
+class RateLimitedException(channel: Channel) : RuntimeException("$channel rate limit hit")
