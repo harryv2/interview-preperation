@@ -74,7 +74,11 @@ class Group(
                     owed[debtor to creditor] = owed.getOrDefault(debtor to creditor, Money.ZERO) + paid
                     debt -= paid
 
-                    if (paid == credit) creditors.remove(creditor) else creditors[creditor] = credit - paid
+                    if (paid == credit) {
+                        creditors.remove(creditor)
+                    } else{
+                        creditors[creditor] = credit - paid
+                    }
                 }
             }
         }
