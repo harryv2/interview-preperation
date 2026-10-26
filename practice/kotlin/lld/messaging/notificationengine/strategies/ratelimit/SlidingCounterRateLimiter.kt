@@ -29,6 +29,14 @@ class SlidingCounterRateLimiter(
         }
     }
 
+    override fun release(key: String) {
+        lock.withLock {
+            if (current > 0) {
+                current--
+            }
+        }
+    }
+
     private fun rollWindow(now: Long) {
         val windowsPassed = (now - windowStart) / windowNanos
         if (windowsPassed == 0L) return

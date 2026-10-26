@@ -8,4 +8,8 @@ class PerUserRateLimiter(private val newLimiter: () -> RateLimiter) : RateLimite
     override fun tryAcquire(key: String): Boolean {
         return limiters.computeIfAbsent(key) { newLimiter() }.tryAcquire(key)
     }
+
+    override fun release(key: String) {
+        limiters[key]?.release(key)
+    }
 }

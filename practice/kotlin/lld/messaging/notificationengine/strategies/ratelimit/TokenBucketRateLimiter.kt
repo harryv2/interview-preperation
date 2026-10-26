@@ -21,6 +21,12 @@ class TokenBucketRateLimiter(
         }
     }
 
+    override fun release(key: String) {
+        lock.withLock {
+            tokens = min(capacity.toDouble(), tokens + 1)
+        }
+    }
+
     private fun refill() {
         val now = System.nanoTime()
         val elapsedSeconds = (now - lastRefillNanos) / 1_000_000_000.0

@@ -24,4 +24,12 @@ class SlidingWindowRateLimiter(
             return true
         }
     }
+
+    override fun release(key: String) {
+        lock.withLock {
+            if (sentAt.isNotEmpty()) {
+                sentAt.removeLast()
+            }
+        }
+    }
 }

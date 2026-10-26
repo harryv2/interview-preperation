@@ -1,0 +1,37 @@
+Elevator (hello interview version)
+
+Same structure as ../elevator (strategies, observers, door, panels, displays).
+The difference is how stops are stored and when the elevator stops.
+
+
+Request
+
+- Request(floor, type)
+- PICKUP_UP     hall call, passenger wants to go up
+- PICKUP_DOWN   hall call, passenger wants to go down
+- DESTINATION   button inside the cabin, stop no matter the direction
+- HallPanel.callLift(direction)  -> Request.pickup(floor, direction) -> controller.requestElevator
+- ElevatorPanel.pressFloor(floor) -> Request.destination(floor) -> elevator.addRequest
+
+The elevator keeps one Set<Request> instead of upStops / downStops.
+A Set also ignores duplicate presses of the same button.
+
+
+Direction-aware stopping
+
+- Going up, the elevator stops for PICKUP_UP and DESTINATION only.
+- Going down, it stops for PICKUP_DOWN and DESTINATION only.
+- A PICKUP_DOWN above an elevator going up is skipped. It is served after the elevator turns around.
+- When nothing matching is left ahead, it rides to the furthest opposite pickup and turns there.
+- On arrival, only the requests that match the new direction are removed.
+
+
+Swappable logic
+
+- ElevatorAssignmentStrategy picks the elevator for a hall call.
+  CommittedIdleNearestAssignment is the hello interview one:
+    1. elevator moving the requested way, not past the floor, with a stop at or beyond it
+    2. else nearest idle elevator
+    3. else nearest elevator
+- ElevatorMovementStrategy picks the next stop. LookMovementStrategy sweeps in one direction,
+  then reverses (SCAN / LOOK).

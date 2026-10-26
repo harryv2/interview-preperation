@@ -27,6 +27,12 @@ messaging/     fan out, delivery and escalation
 social/        content, feeds and growth
   quora, recommendationengine, referral
 
+rippling/      one hour versions of questions reported for Rippling
+  accessmanagement, aliendictionary, articlevotes, canvas, cronscheduler,
+  deliverycost, employeegrouping, expenserules, kvstore, lfucache,
+  mediansorted, musicanalytics, orgchart, policyengine, prioritytaskrunner,
+  ratelimiter, rbachierarchy, spreadsheet, weightedcache
+
 misc/          no domain peer yet
   browserhistory, elevator, ruleengine, trello
 

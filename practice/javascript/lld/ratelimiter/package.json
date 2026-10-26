@@ -1,0 +1,20 @@
+{
+  "name": "rate-limiter-service",
+  "version": "1.0.0",
+  "private": true,
+  "main": "main.js",
+  "scripts": {
+    "start": "node main.js",
+    "test": "mocha 'specs/**/*.js'"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "joi": "^17.13.3",
+    "lru-cache": "^7.18.3"
+  },
+  "devDependencies": {
+    "chai": "^4.3.10",
+    "chai-http": "^4.4.0",
+    "mocha": "^10.2.0"
+  }
+}
