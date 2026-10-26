@@ -6,8 +6,25 @@ data class Permission(
     val action: Action,
     val resource: String,
 ) {
+    init {
+        val star = resource.indexOf('*')
+        require(star == -1 || resource == "*" || (resource.endsWith("/*") && star == resource.length - 1)) {
+            "Wildcard only as \"*\" or a trailing \"/*\": $resource"
+        }
+    }
+
     fun allows(action: Action, resource: String): Boolean {
-        return this.action == action && (this.resource == "*" || this.resource == resource)
+        if (this.action != action) {
+            return false
+        }
+        if (this.resource == "*") {
+            return true
+        }
+        if (this.resource.endsWith("/*")) {
+            val prefix = this.resource.removeSuffix("*")
+            return resource.startsWith(prefix) && resource.length > prefix.length
+        }
+        return this.resource == resource
     }
 }
 

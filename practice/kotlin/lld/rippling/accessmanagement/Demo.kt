@@ -29,4 +29,23 @@ fun main() {
     println("-- leaving the group drops its roles")
     access.removeUserFromGroup("alice", "finance")
     println("  alice read payroll:  ${access.hasAccess("alice", Action.READ, "payroll")}")
+
+    println("-- resource hierarchy: payroll/us/* covers everything under payroll/us")
+    access.addRole("us_payroll_admin", Permission(Action.READ, "payroll/us/*"), Permission(Action.WRITE, "payroll/us/*"))
+    access.addRole("ca_payroll_viewer", Permission(Action.READ, "payroll/us/ca"))
+    access.addUser("dan")
+    access.addUser("erin")
+    access.assignRoleToUser("dan", "us_payroll_admin")
+    access.assignRoleToUser("erin", "ca_payroll_viewer")
+
+    println("  dan write payroll/us/ca:        ${access.hasAccess("dan", Action.WRITE, "payroll/us/ca")}")
+    println("  dan read payroll/us/ny/2026-01: ${access.hasAccess("dan", Action.READ, "payroll/us/ny/2026-01")}")
+    println("  dan read payroll/us:            ${access.hasAccess("dan", Action.READ, "payroll/us")}")
+    println("  dan read payroll/uk/london:     ${access.hasAccess("dan", Action.READ, "payroll/uk/london")}")
+    println("  dan read payroll/usa:           ${access.hasAccess("dan", Action.READ, "payroll/usa")}")
+    println("  erin read payroll/us/ca:        ${access.hasAccess("erin", Action.READ, "payroll/us/ca")}")
+    println("  erin read payroll/us/ca/sf:     ${access.hasAccess("erin", Action.READ, "payroll/us/ca/sf")}")
+
+    println("-- wildcard in the middle is rejected")
+    runCatching { Permission(Action.READ, "payroll/*/ca") }.onFailure { println("  ${it.message}") }
 }
