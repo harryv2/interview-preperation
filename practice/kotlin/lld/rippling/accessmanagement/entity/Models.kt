@@ -1,10 +1,15 @@
 package lld.rippling.accessmanagement.entity
 
+import java.time.Instant
+
 enum class Action { READ, WRITE, DELETE }
+
+enum class Effect { ALLOW, DENY }
 
 data class Permission(
     val action: Action,
     val resource: String,
+    val effect: Effect = Effect.ALLOW,
 ) {
     init {
         val star = resource.indexOf('*')
@@ -13,7 +18,7 @@ data class Permission(
         }
     }
 
-    fun allows(action: Action, resource: String): Boolean {
+    fun matches(action: Action, resource: String): Boolean {
         if (this.action != action) {
             return false
         }
@@ -34,9 +39,10 @@ class Role(val name: String) {
 
 class Group(val name: String) {
     val roles = HashSet<String>()
+    val parents = HashSet<String>()
 }
 
 class User(val id: String) {
-    val roles = HashSet<String>()
+    val roles = HashMap<String, Instant?>()
     val groups = HashSet<String>()
 }
